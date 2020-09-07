@@ -36,7 +36,7 @@ int main()
     if (!ocl_init())
         throw std::runtime_error("Can't init OpenCL driver!");
 
-    // Откройте 
+    // Откройте
     // https://www.khronos.org/registry/OpenCL/sdk/1.2/docs/man/xhtml/
     // Нажмите слева: "OpenCL Runtime" -> "Query Platform Info" -> "clGetPlatformIDs"
     // Прочитайте документацию clGetPlatformIDs и убедитесь что этот способ узнать сколько есть платформ соответствует документации:
@@ -55,7 +55,7 @@ int main()
         // Откройте документацию по "OpenCL Runtime" -> "Query Platform Info" -> "clGetPlatformInfo"
         // Не забывайте проверять коды ошибок с помощью макроса OCL_SAFE_CALL
         size_t platformNameSize = 0;
-        OCL_SAFE_CALL(clGetPlatformInfo(platform, 4204, 0, nullptr, &platformNameSize));
+        OCL_SAFE_CALL(clGetPlatformInfo(platform, CL_PLATFORM_NAME, 0, nullptr, &platformNameSize));
         // TODO 1.1
         // Попробуйте вместо CL_PLATFORM_NAME передать какое-нибудь случайное число - например 239
         // Т.к. это некорректный идентификатор параметра платформы - то метод вернет код ошибки
@@ -71,7 +71,7 @@ int main()
         // TODO 1.2
         // Аналогично тому как был запрошен список идентификаторов всех платформ - так и с названием платформы, теперь, когда известна длина названия - его можно запросить:
         std::vector<unsigned char> platformName(platformNameSize, 0);
-        // clGetPlatformInfo(...);
+        OCL_SAFE_CALL(clGetPlatformInfo(platform, CL_PLATFORM_NAME, platformNameSize, platformName.data(), nullptr));
         std::cout << "    Platform name: " << platformName.data() << std::endl;
 
         // TODO 1.3
