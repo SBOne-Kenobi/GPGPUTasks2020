@@ -1,0 +1,2 @@
+D:\msys64\mingw64\bin\ar.exe qc liblibclew.a  CMakeFiles/libclew.dir/libclew/ocl_init.cpp.obj
+D:\msys64\mingw64\bin\ranlib.exe liblibclew.a
