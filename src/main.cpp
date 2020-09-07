@@ -69,7 +69,7 @@ int main() {
     // Аналогично тому как был запрошен список идентификаторов всех платформ - так и с названием платформы, теперь, когда известна длина названия - его можно запросить:
     std::vector<unsigned char> platformName(platformNameSize, 0);
     OCL_SAFE_CALL(clGetPlatformInfo(platform, CL_PLATFORM_NAME, platformNameSize, platformName.data(), nullptr));
-    std::cout << "    Platform name: " << platformName.data() << std::endl;
+    std::cout << "\tPlatform name: " << platformName.data() << std::endl;
 
     // TODO 1.3
     // Запросите и напечатайте так же в консоль вендора данной платформы
@@ -78,7 +78,7 @@ int main() {
     std::vector<unsigned char> platformVendorName(platformVendorNameSize, 0);
     OCL_SAFE_CALL(clGetPlatformInfo(platform, CL_PLATFORM_VENDOR,
                                     platformVendorNameSize, platformVendorName.data(), nullptr));
-    std::cout << "    Platform vendor name: " << platformVendorName.data() << std::endl;
+    std::cout << "\tPlatform vendor name: " << platformVendorName.data() << std::endl;
 
     // TODO 2.1
     // Запросите число доступных устройств данной платформы (аналогично тому как это было сделано для запроса числа доступных платформ - см. секцию "OpenCL Runtime" -> "Query Devices")
