@@ -1,8 +1,0 @@
-D:/Learning/GPGPUTasks2020/build/CMakeFiles/enumDevices.dir
-D:/Learning/GPGPUTasks2020/build/CMakeFiles/edit_cache.dir
-D:/Learning/GPGPUTasks2020/build/CMakeFiles/rebuild_cache.dir
-D:/Learning/GPGPUTasks2020/build/libs/CMakeFiles/edit_cache.dir
-D:/Learning/GPGPUTasks2020/build/libs/CMakeFiles/rebuild_cache.dir
-D:/Learning/GPGPUTasks2020/build/libs/clew/CMakeFiles/libclew.dir
-D:/Learning/GPGPUTasks2020/build/libs/clew/CMakeFiles/edit_cache.dir
-D:/Learning/GPGPUTasks2020/build/libs/clew/CMakeFiles/rebuild_cache.dir

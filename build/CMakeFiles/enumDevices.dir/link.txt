@@ -1,3 +1,0 @@
-"D:\Program Files\JetBrains\CLion 2019.3.2\bin\cmake\win\bin\cmake.exe" -E remove -f CMakeFiles\enumDevices.dir/objects.a
-D:\msys64\mingw64\bin\ar.exe cr CMakeFiles\enumDevices.dir/objects.a @CMakeFiles\enumDevices.dir\objects1.rsp
-D:\msys64\mingw64\bin\g++.exe -g   -Wl,--whole-archive CMakeFiles\enumDevices.dir/objects.a -Wl,--no-whole-archive  -o enumDevices.exe -Wl,--out-implib,libenumDevices.dll.a -Wl,--major-image-version,0,--minor-image-version,0 @CMakeFiles\enumDevices.dir\linklibs.rsp
