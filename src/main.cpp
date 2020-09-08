@@ -112,34 +112,36 @@ int main() {
       // - Еще пару или более свойств устройства, которые вам покажутся наиболее интересными
       cl_device_id device = devices[deviceIndex];
 
+      std::cout << "\t\tDevice #" << deviceIndex + 1 << "/" << devicesCount << std::endl;
+
       size_t deviceNameSize = 0;
       OCL_SAFE_CALL(clGetDeviceInfo(device, CL_DEVICE_NAME, 0, nullptr, &deviceNameSize));
       std::vector<unsigned char> deviceName(deviceNameSize, 0);
       OCL_SAFE_CALL(clGetDeviceInfo(device, CL_DEVICE_NAME, deviceNameSize, deviceName.data(), nullptr));
-      std::cout << "\t\tDevice name: " << deviceName.data() << std::endl;
+      std::cout << "\t\t\tDevice name: " << deviceName.data() << std::endl;
 
       cl_device_type deviceType;
       OCL_SAFE_CALL(clGetDeviceInfo(device, CL_DEVICE_TYPE, sizeof(deviceType), &deviceType, nullptr));
-      std::cout << "\t\tDevice type: " << to_string_device_type(deviceType) << std::endl;
+      std::cout << "\t\t\tDevice type: " << to_string_device_type(deviceType) << std::endl;
 
       cl_ulong deviceMemSize;
       OCL_SAFE_CALL(clGetDeviceInfo(device, CL_DEVICE_GLOBAL_MEM_SIZE,
                                     sizeof(deviceMemSize), &deviceMemSize, nullptr));
       deviceMemSize >>= 20;
-      std::cout << "\t\tDevice memory size: " << deviceMemSize << " mb" << std::endl;
+      std::cout << "\t\t\tDevice memory size: " << deviceMemSize << " mb" << std::endl;
 
       cl_ulong deviceCacheSize;
       OCL_SAFE_CALL(clGetDeviceInfo(device, CL_DEVICE_GLOBAL_MEM_CACHE_SIZE,
                                     sizeof(deviceCacheSize), &deviceCacheSize, nullptr));
 
       deviceCacheSize >>= 10;
-      std::cout << "\t\tDevice cache size: " << deviceCacheSize << " gb" << std::endl;
+      std::cout << "\t\t\tDevice cache size: " << deviceCacheSize << " gb" << std::endl;
 
       cl_uint deviceCacheLineSize;
       OCL_SAFE_CALL(clGetDeviceInfo(device, CL_DEVICE_GLOBAL_MEM_CACHELINE_SIZE,
                                     sizeof(deviceCacheLineSize), &deviceCacheLineSize, nullptr));
 
-      std::cout <<  "\t\tDevice chacheline size: " << deviceCacheLineSize << " b" << std::endl;
+      std::cout <<  "\t\t\tDevice chacheline size: " << deviceCacheLineSize << " b" << std::endl;
     }
   }
 
