@@ -68,6 +68,6 @@ size_t	get_global_offset	(uint dimindx);
 #endif
 
 // 64 for AMD, 32 for NVidia, 8 for intel GPUs, 1 for CPU
-#define WARP_SIZE 64
+#define WARP_SIZE 32
 
 #endif // pragma once

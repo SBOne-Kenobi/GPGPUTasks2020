@@ -10,7 +10,6 @@
 #include <fstream>
 #include <cassert>
 
-
 template<typename T>
 std::string to_string(T value) {
   std::ostringstream ss;
@@ -130,7 +129,8 @@ cl_context getContext(cl_device_id device) {
   return RET_SAFE_CALL(cl_context, clCreateContext, nullptr, 1, &device, nullptr, nullptr);
 }
 
-cl_command_queue getCmdQueue(cl_context context, cl_device_id device, cl_command_queue_properties properties) {
+cl_command_queue getCmdQueue(cl_context context, cl_device_id device,
+                             cl_command_queue_properties properties = CL_QUEUE_PROFILING_ENABLE) {
   return RET_SAFE_CALL(cl_command_queue, clCreateCommandQueue, context, device, properties);
 }
 
@@ -139,24 +139,12 @@ int main() {
   if (!ocl_init())
     throw std::runtime_error("Can't init OpenCL driver!");
 
-  // TODO 1 По аналогии с предыдущим заданием узнайте какие есть устройства, и выберите из них какое-нибудь
-  // (если в списке устройств есть хоть одна видеокарта - выберите ее, если нету - выбирайте процессор)
   cl_device_id device = getDevice();
   printDeviceInfo(device);
 
-  // TODO 2 Создайте контекст с выбранным устройством
-  // См. документацию https://www.khronos.org/registry/OpenCL/sdk/1.2/docs/man/xhtml/ -> OpenCL Runtime -> Contexts -> clCreateContext
-  // Не забывайте проверять все возвращаемые коды на успешность (обратите внимание что в данном случае метод возвращает
-  // код по переданному аргументом errcode_ret указателю)
-  // И хорошо бы сразу добавить в конце clReleaseContext (да, не очень RAII, но это лишь пример)
   cl_context context = getContext(device);
 
-  // TODO 3 Создайте очередь выполняемых команд в рамках выбранного контекста и устройства
-  // См. документацию https://www.khronos.org/registry/OpenCL/sdk/1.2/docs/man/xhtml/ -> OpenCL Runtime -> Runtime APIs -> Command Queues -> clCreateCommandQueue
-  // Убедитесь что в соответствии с документацией вы создали in-order очередь задач
-  // И хорошо бы сразу добавить в конце clReleaseQueue (не забывайте освобождать ресурсы)
-  cl_command_queue queue = getCmdQueue(context, device, CL_QUEUE_PROFILING_ENABLE);
-
+  cl_command_queue queue = getCmdQueue(context, device);
 
   unsigned int n = 1000 * 1000;
   // Создаем два массива псевдослучайных данных для сложения и массив для будущего хранения результата
@@ -170,12 +158,12 @@ int main() {
   }
   std::cout << "Data generated for n=" << n << "!" << std::endl;
 
-  // TODO 4 Создайте три буфера в памяти устройства (в случае видеокарты - в видеопамяти - VRAM) - для двух суммируемых массивов as и bs (они read-only) и для массива с результатом cs (он write-only)
-  // См. Buffer Objects -> clCreateBuffer
-  // Размер в байтах соответственно можно вычислить через sizeof(float)=4 и тот факт что чисел в каждом массиве - n штук
-  // Данные в as и bs можно прогрузить этим же методом скопировав данные из host_ptr=as.data() (и не забыв про битовый флаг на это указывающий)
-  // или же через метод Buffer Objects -> clEnqueueWriteBuffer
-  // И хорошо бы сразу добавить в конце clReleaseMemObject (аналогично все дальнейшие ресурсы вроде OpenCL под-программы, кернела и т.п. тоже нужно освобождать)
+  auto as_buf = RET_SAFE_CALL(cl_mem, clCreateBuffer, context, CL_MEM_READ_ONLY, sizeof(float) * n, nullptr);
+  auto bs_buf = RET_SAFE_CALL(cl_mem, clCreateBuffer, context, CL_MEM_READ_ONLY, sizeof(float) * n, nullptr);
+  auto cs_buf = RET_SAFE_CALL(cl_mem, clCreateBuffer, context, CL_MEM_WRITE_ONLY, sizeof(float) * n, nullptr);
+
+  OCL_SAFE_CALL(clEnqueueWriteBuffer(queue, as_buf, CL_TRUE, 0, sizeof(float) * n, as.data(), 0, nullptr, nullptr));
+  OCL_SAFE_CALL(clEnqueueWriteBuffer(queue, bs_buf, CL_TRUE, 0, sizeof(float) * n, as.data(), 0, nullptr, nullptr));
 
   // TODO 6 Выполните TODO 5 (реализуйте кернел в src/cl/aplusb.cl)
   // затем убедитесь что выходит загрузить его с диска (убедитесь что Working directory выставлена правильно - см. описание задания)
@@ -187,7 +175,7 @@ int main() {
     if (kernel_sources.size() == 0) {
       throw std::runtime_error("Empty source file! May be you forgot to configure working directory properly?");
     }
-    // std::cout << kernel_sources << std::endl;
+    std::cout << kernel_sources << std::endl;
   }
 
   // TODO 7 Создайте OpenCL-подпрограмму с исходниками кернела
@@ -278,6 +266,10 @@ int main() {
 //    }
 
   OCL_SAFE_CALL(clReleaseCommandQueue(queue));
+  OCL_SAFE_CALL(clReleaseContext(context));
+  OCL_SAFE_CALL(clReleaseMemObject(as_buf));
+  OCL_SAFE_CALL(clReleaseMemObject(bs_buf));
+  OCL_SAFE_CALL(clReleaseMemObject(cs_buf));
 
   return 0;
 }
