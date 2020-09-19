@@ -234,7 +234,6 @@ int main() {
           RET_SAFE_CALL(cl_kernel, clCreateKernel, program_aplusb.data, "aplusb"),
           clReleaseKernel);
 
-  // TODO 10 Выставите все аргументы в кернеле через clSetKernelArg (as_gpu, bs_gpu, cs_gpu и число значений, убедитесь что тип количества элементов такой же в кернеле)
   {
     unsigned int i = 0;
     OCL_SAFE_CALL(clSetKernelArg(kernel.data, i++, sizeof(as_buf.data), &as_buf.data));
@@ -266,7 +265,6 @@ int main() {
     std::cout << "VRAM bandwidth: " << bandwidth << " GB/s" << std::endl;
   }
 
-  // TODO 15 Скачайте результаты вычислений из видеопамяти (VRAM) в оперативную память (RAM) - из cs_gpu в cs (и рассчитайте скорость трансфера данных в гигабайтах в секунду)
   {
     timer t;
     for (unsigned int i = 0; i < 20; ++i) {
@@ -279,7 +277,6 @@ int main() {
     std::cout << "VRAM -> RAM bandwidth: " << bandwidth << " GB/s" << std::endl;
   }
 
-  // TODO 16 Сверьте результаты вычислений со сложением чисел на процессоре (и убедитесь, что если в кернеле сделать намеренную ошибку, то эта проверка поймает ошибку)
   for (unsigned int i = 0; i < n; ++i) {
     if (cs[i] != as[i] + bs[i]) {
       throw std::runtime_error("CPU and GPU results differ!");
