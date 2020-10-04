@@ -41,8 +41,8 @@ int main(int argc, char **argv) {
       EXPECT_THE_SAME(reference_sum, sum, "CPU result should be consistent!");
       t.nextLap();
     }
-    std::cout << "CPU:     " << t.lapAvg() << "+-" << t.lapStd() << " s" << std::endl;
-    std::cout << "CPU:     " << (n / 1000.0 / 1000.0) / t.lapAvg() << " millions/s" << std::endl;
+    std::cout << "CPU:      " << t.lapAvg() << "+-" << t.lapStd() << " s" << std::endl;
+    std::cout << "CPU:      " << (n / 1000.0 / 1000.0) / t.lapAvg() << " millions/s" << std::endl;
   }
 
   {
@@ -56,8 +56,8 @@ int main(int argc, char **argv) {
       EXPECT_THE_SAME(reference_sum, sum, "CPU OpenMP result should be consistent!");
       t.nextLap();
     }
-    std::cout << "CPU OMP: " << t.lapAvg() << "+-" << t.lapStd() << " s" << std::endl;
-    std::cout << "CPU OMP: " << (n / 1000.0 / 1000.0) / t.lapAvg() << " millions/s" << std::endl;
+    std::cout << "CPU OMP:  " << t.lapAvg() << "+-" << t.lapStd() << " s" << std::endl;
+    std::cout << "CPU OMP:  " << (n / 1000.0 / 1000.0) / t.lapAvg() << " millions/s" << std::endl;
   }
 
   {
@@ -71,26 +71,48 @@ int main(int argc, char **argv) {
 
     gpu::gpu_mem_32u sum_gpu;
     sum_gpu.resizeN(1);
+    {
+      size_t groupSize = 128;
+      size_t globalWorkSize = (n + groupSize - 1) / groupSize * groupSize;
+      gpu::WorkSize workSize(groupSize, globalWorkSize);
 
-    size_t groupSize = 128;
-    size_t globalWorkSize = (n + groupSize - 1) / groupSize * groupSize;
-    gpu::WorkSize workSize(groupSize, globalWorkSize);
+      std::string defines = " -D WORK_GROUP_SIZE=" + to_string(groupSize);
+      ocl::Kernel bad_kernel(sum_kernel, sum_kernel_length, "bad_sum", defines);
+      bad_kernel.compile();
 
-    std::string defines = " -D WORK_GROUP_SIZE=" + to_string(groupSize);
-    ocl::Kernel kernel(sum_kernel, sum_kernel_length, "bad_sum", defines);
-    kernel.compile();
-
-
-    timer t;
-    for (int i = 0; i < benchmarkingIters; ++i) {
-      unsigned int sum = 0;
-      sum_gpu.writeN(&sum, 1);
-      kernel.exec(workSize, as_gpu, sum_gpu, n);
-      sum_gpu.readN(&sum, 1);
-      EXPECT_THE_SAME(reference_sum, sum, "GPU result should be consistent!");
-      t.nextLap();
+      timer t;
+      for (int i = 0; i < benchmarkingIters; ++i) {
+        unsigned int sum = 0;
+        sum_gpu.writeN(&sum, 1);
+        bad_kernel.exec(workSize, as_gpu, sum_gpu, n);
+        sum_gpu.readN(&sum, 1);
+        EXPECT_THE_SAME(reference_sum, sum, "GPU result should be consistent!");
+        t.nextLap();
+      }
+      std::cout << "GPU(bad): " << t.lapAvg() << "+-" << t.lapStd() << " s" << std::endl;
+      std::cout << "GPU(bad): " << (globalWorkSize / 1000.0 / 1000.0) / t.lapAvg() << " millions/s" << std::endl;
     }
-    std::cout << "GPU(bad):" << t.lapAvg() << "+-" << t.lapStd() << " s" << std::endl;
-    std::cout << "GPU(bad):" << (n / 1000.0 / 1000.0) / t.lapAvg() << " millions/s" << std::endl;
+
+    {
+      size_t groupSize = 128;
+      size_t globalWorkSize = (n + groupSize - 1) / groupSize * groupSize;
+      gpu::WorkSize workSize(groupSize, globalWorkSize);
+
+      std::string defines = " -D WORK_GROUP_SIZE=" + to_string(groupSize);
+      ocl::Kernel opt_kernel(sum_kernel, sum_kernel_length, "opt_sum", defines);
+      opt_kernel.compile();
+
+      timer t;
+      for (int i = 0; i < benchmarkingIters; ++i) {
+        unsigned int sum = 0;
+        sum_gpu.writeN(&sum, 1);
+        opt_kernel.exec(workSize, as_gpu, sum_gpu, n);
+        sum_gpu.readN(&sum, 1);
+        EXPECT_THE_SAME(reference_sum, sum, "GPU result should be consistent!");
+        t.nextLap();
+      }
+      std::cout << "GPU(opt): " << t.lapAvg() << "+-" << t.lapStd() << " s" << std::endl;
+      std::cout << "GPU(opt): " << (globalWorkSize / 1000.0 / 1000.0) / t.lapAvg() << " millions/s" << std::endl;
+    }
   }
 }
