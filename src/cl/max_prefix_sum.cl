@@ -35,17 +35,27 @@ __kernel void init_buffer(
 __kernel void reorder_buffer(
         __global int *buffer,
         int len) {
-  const int globalId = get_global_id(0);
-
-  if (globalId == 0) {
+  const int groupId = get_group_id(0);
+  const int localId = get_local_id(0);
+  if (groupId == 0) {
     int cnt = (len + WORK_GROUP_SIZE - 1) / WORK_GROUP_SIZE;
-    for (int i = 1; i < cnt; ++i) {
-      buffer[3 * i + 0] = buffer[3 * (i * WORK_GROUP_SIZE) + 0];
-      buffer[3 * i + 1] = buffer[3 * (i * WORK_GROUP_SIZE) + 1];
-      buffer[3 * i + 2] = buffer[3 * (i * WORK_GROUP_SIZE) + 2];
+    for (int i = localId; (i - localId) < cnt; i += WORK_GROUP_SIZE) {
+      if (i < cnt && i > 0) {
+        buffer[3 * i + 0] = buffer[3 * i * WORK_GROUP_SIZE + 0];
+        buffer[3 * i + 1] = buffer[3 * i * WORK_GROUP_SIZE + 1];
+        buffer[3 * i + 2] = buffer[3 * i * WORK_GROUP_SIZE + 2];
+      }
+      barrier(CLK_GLOBAL_MEM_FENCE);
     }
   }
 }
+
+//int cnt = (len + WORK_GROUP_SIZE - 1) / WORK_GROUP_SIZE;
+//for (int i = 1; i < cnt; ++i) {
+//  buffer[3 * i + 0] = buffer[3 * (i * WORK_GROUP_SIZE) + 0];
+//  buffer[3 * i + 1] = buffer[3 * (i * WORK_GROUP_SIZE) + 1];
+//  buffer[3 * i + 2] = buffer[3 * (i * WORK_GROUP_SIZE) + 2];
+//}
 
 __kernel void max_prefix(
         __global int *buffer,

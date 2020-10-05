@@ -103,10 +103,9 @@ int main(int argc, char **argv) {
 
         for (int len = globalSize; len > 1; len /= groupSize) {
           workSize = gpu::WorkSize(groupSize, (len + groupSize - 1) / groupSize * groupSize);
-
           max_prefix.exec(workSize, buffer_gpu, len);
 
-          //FIXME
+          workSize = gpu::WorkSize(groupSize, groupSize);
           reorder_buffer.exec(workSize, buffer_gpu, len);
         }
 
