@@ -16,37 +16,6 @@ void raiseFail(const T &a, const T &b, std::string message, std::string filename
 
 #define EXPECT_THE_SAME(a, b, message) raiseFail(a, b, message, __FILE__, __LINE__)
 
-void init_buffer(
-        int *buffer,
-        const int *a,
-        int n, int workSize) {
-  for (int i = 0; i < workSize; i++) {
-    if (i < n) {
-      buffer[3 * i + 0] = a[i];
-      if (a[i] > 0) {
-        buffer[3 * i + 1] = i + 1;
-        buffer[3 * i + 2] = a[i];
-      } else {
-        buffer[3 * i + 1] = i;
-        buffer[3 * i + 2] = 0;
-      }
-    } else {
-      buffer[3 * i + 0] = 0;
-      buffer[3 * i + 1] = i;
-      buffer[3 * i + 2] = 0;
-    }
-  }
-}
-
-void reorder_buffer(int *buffer, int len, int groupSize) {
-  int cnt = (len + groupSize - 1) / groupSize;
-  for (int i = 1; i < cnt; ++i) {
-    buffer[3 * i + 0] = buffer[3 * (i * groupSize) + 0];
-    buffer[3 * i + 1] = buffer[3 * (i * groupSize) + 1];
-    buffer[3 * i + 2] = buffer[3 * (i * groupSize) + 2];
-  }
-}
-
 int main(int argc, char **argv) {
   gpu::Device device = gpu::chooseGPUDevice(argc, argv);
   gpu::Context context;
@@ -56,12 +25,16 @@ int main(int argc, char **argv) {
   size_t groupSize = 128;
 
   std::string defines = " -D WORK_GROUP_SIZE=" + to_string(groupSize);
-  ocl::Kernel kernel(max_prefix_sum_kernel, max_prefix_sum_kernel_length, "max_prefix", defines);
-  kernel.compile();
+  ocl::Kernel max_prefix(max_prefix_sum_kernel, max_prefix_sum_kernel_length, "max_prefix", defines);
+  ocl::Kernel init_buffer(max_prefix_sum_kernel, max_prefix_sum_kernel_length, "init_buffer", defines);
+  ocl::Kernel reorder_buffer(max_prefix_sum_kernel, max_prefix_sum_kernel_length, "reorder_buffer", defines);
+  max_prefix.compile();
+  init_buffer.compile();
+  reorder_buffer.compile();
 
-  gpu::gpu_mem_32i buffer_gpu;
+  gpu::gpu_mem_32i buffer_gpu, as_gpu;
 
-  int benchmarkingIters = 1;
+  int benchmarkingIters = 10;
   int max_n = (1 << 24);
 
   for (int n = 2; n <= max_n; n *= 2) {
@@ -116,28 +89,32 @@ int main(int argc, char **argv) {
 
     {
       size_t globalSize = (n + groupSize - 1) / groupSize * groupSize;
-      std::vector<int> buffer(3 * globalSize);
+      as_gpu.resizeN(n);
+      as_gpu.writeN(as.data(), n);
+      buffer_gpu.resizeN(3 * globalSize);
 
       timer t;
       for (int i = 0; i < benchmarkingIters; i++) {
         int max_sum;
         int res;
 
-        init_buffer(buffer.data(), as.data(), n, globalSize);
+        gpu::WorkSize workSize(groupSize, globalSize);
+        init_buffer.exec(workSize, buffer_gpu, as_gpu, n);
+
         for (int len = globalSize; len > 1; len /= groupSize) {
-          buffer_gpu.resizeN(3 * len);
-          buffer_gpu.writeN(buffer.data(), 3 * len);
+          workSize = gpu::WorkSize(groupSize, (len + groupSize - 1) / groupSize * groupSize);
 
-          gpu::WorkSize workSize(groupSize, (len + groupSize - 1) / groupSize * groupSize);
+          max_prefix.exec(workSize, buffer_gpu, len);
 
-          kernel.exec(workSize, buffer_gpu, len);
-
-          buffer_gpu.readN(buffer.data(), 3 * len);
-          reorder_buffer(buffer.data(), len, groupSize);
+          //FIXME
+          reorder_buffer.exec(workSize, buffer_gpu, len);
         }
 
-        max_sum = buffer[2];
-        res = buffer[1];
+        int result_from_buffer[3];
+        buffer_gpu.readN(result_from_buffer, 3);
+
+        max_sum = result_from_buffer[2];
+        res = result_from_buffer[1];
 
         EXPECT_THE_SAME(reference_max_sum, max_sum, "GPU result should be consistent!");
         EXPECT_THE_SAME(reference_result, res, "GPU result should be consistent!");

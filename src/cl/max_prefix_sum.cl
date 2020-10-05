@@ -10,6 +10,43 @@
 
 #line 6
 
+__kernel void init_buffer(
+        __global int *buffer,
+        __global const int *a,
+        int n) {
+  const int i = get_global_id(0);
+  if (i < n) {
+    buffer[3 * i + 0] = a[i];
+    if (a[i] > 0) {
+      buffer[3 * i + 1] = i + 1;
+      buffer[3 * i + 2] = a[i];
+    } else {
+      buffer[3 * i + 1] = i;
+      buffer[3 * i + 2] = 0;
+    }
+  } else {
+    buffer[3 * i + 0] = 0;
+    buffer[3 * i + 1] = i;
+    buffer[3 * i + 2] = 0;
+  }
+}
+
+
+__kernel void reorder_buffer(
+        __global int *buffer,
+        int len) {
+  const int globalId = get_global_id(0);
+
+  if (globalId == 0) {
+    int cnt = (len + WORK_GROUP_SIZE - 1) / WORK_GROUP_SIZE;
+    for (int i = 1; i < cnt; ++i) {
+      buffer[3 * i + 0] = buffer[3 * (i * WORK_GROUP_SIZE) + 0];
+      buffer[3 * i + 1] = buffer[3 * (i * WORK_GROUP_SIZE) + 1];
+      buffer[3 * i + 2] = buffer[3 * (i * WORK_GROUP_SIZE) + 2];
+    }
+  }
+}
+
 __kernel void max_prefix(
         __global int *buffer,
         int len) {
@@ -42,7 +79,7 @@ __kernel void max_prefix(
       uploaded[0] = sum;
       uploaded[1] = res;
       uploaded[2] = max_sum;
-//      printf("---------LOG : global_id=%d, len=%d, ans=(%d, %d, %d)\n", globalId, *len, max_sum, res, sum);
+//      printf("---------LOG : global_id=%d, len=%d, ans=(%d, %d, %d)\n", globalId, len, max_sum, res, sum);
     }
   }
 
