@@ -45,17 +45,9 @@ __kernel void reorder_buffer(
         buffer[3 * i + 1] = buffer[3 * i * WORK_GROUP_SIZE + 1];
         buffer[3 * i + 2] = buffer[3 * i * WORK_GROUP_SIZE + 2];
       }
-      barrier(CLK_GLOBAL_MEM_FENCE);
     }
   }
 }
-
-//int cnt = (len + WORK_GROUP_SIZE - 1) / WORK_GROUP_SIZE;
-//for (int i = 1; i < cnt; ++i) {
-//  buffer[3 * i + 0] = buffer[3 * (i * WORK_GROUP_SIZE) + 0];
-//  buffer[3 * i + 1] = buffer[3 * (i * WORK_GROUP_SIZE) + 1];
-//  buffer[3 * i + 2] = buffer[3 * (i * WORK_GROUP_SIZE) + 2];
-//}
 
 __kernel void max_prefix(
         __global int *buffer,
@@ -66,19 +58,24 @@ __kernel void max_prefix(
 
   __local int uploaded[3 * WORK_GROUP_SIZE];
 
-  for (int i = 0; i < 3; i++) {
-    uploaded[i * WORK_GROUP_SIZE + localId] = buffer[3 * groupId * WORK_GROUP_SIZE + i * WORK_GROUP_SIZE + localId];
+  int size = min(WORK_GROUP_SIZE, len - globalId + localId);
+
+  if (globalId < len) {
+    for (int i = 0; i < 3; i++) {
+      uploaded[i * size + localId] = buffer[3 * groupId * WORK_GROUP_SIZE + i * size + localId];
+    }
   }
 
-  //TODO : optimize
-  barrier(CLK_LOCAL_MEM_FENCE);
+  if (size > WARP_SIZE) {
+    barrier(CLK_LOCAL_MEM_FENCE);
+  }
 
   if (globalId < len) {
     if (localId == 0) {
       int sum = 0;
       int res = 0;
       int max_sum = 0;
-      for (int i = 0; i < min(WORK_GROUP_SIZE, len - globalId); ++i) {
+      for (int i = 0; i < size; ++i) {
         int part_sum = uploaded[3 * i + 0];
         int part_res = uploaded[3 * i + 1];
         int part_max_sum = uploaded[3 * i + 2] + sum;
@@ -89,7 +86,6 @@ __kernel void max_prefix(
       uploaded[0] = sum;
       uploaded[1] = res;
       uploaded[2] = max_sum;
-//      printf("---------LOG : global_id=%d, len=%d, ans=(%d, %d, %d)\n", globalId, len, max_sum, res, sum);
     }
   }
 
